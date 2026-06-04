@@ -20,7 +20,7 @@ from typing import Optional
 
 import psutil
 
-METRICS_HOST = "127.0.0.1"
+METRICS_HOST = os.environ.get("CLUSTERPULSE_HOST", "0.0.0.0")
 METRICS_PORT = 9100
 
 
