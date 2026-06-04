@@ -1,6 +1,6 @@
 nodes:
   reumanlab:
-    tailscale_ip: 100.100.245.62
+    tailscale_ip: 127.0.0.1
     cores: 22
     ram_gb: 62
     gpu: "NVIDIA RTX 2000 Ada 8GB"
