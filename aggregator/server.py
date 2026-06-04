@@ -248,18 +248,10 @@ async def api_status(request: Request):
 
 
 # ---------------------------------------------------------------------------
-# Protected dashboard
+# Dashboard (public — JS handles auth via /auth/me)
 # ---------------------------------------------------------------------------
 
-@app.get("/")
-async def dashboard(request: Request):
-    """Serve the dashboard (only if authenticated)."""
-    _auth_required(request)
-    # Fall through to static files
-    return Response(status_code=200)
-
-
-# Serve static files (dashboard is protected by the / route above)
+# Serve static files (dashboard is public; /auth/me handles the auth UI flow)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.isdir(static_dir):
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
