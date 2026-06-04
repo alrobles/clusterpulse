@@ -7,7 +7,23 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
-.header{text-align:center;padding:24px 16px 8px}
+/* Top bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#1e293b;border-bottom:1px solid #334155}
+.topbar-brand{font-size:1rem;font-weight:700;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar-user{display:flex;align-items:center;gap:10px}
+.topbar-user img{width:28px;height:28px;border-radius:50%}
+.topbar-user .name{font-size:0.85rem;color:#cbd5e1}
+.btn{font-size:0.8rem;padding:6px 14px;border-radius:6px;border:none;cursor:pointer;font-weight:600;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn-ghost{background:transparent;color:#94a3b8;border:1px solid #475569}
+.btn-ghost:hover{color:#e2e8f0;border-color:#64748b}
+.btn-github{background:#24292f;color:#fff;display:inline-flex;align-items:center;gap:8px;padding:10px 20px;font-size:0.95rem}
+/* Login screen */
+.login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:20px}
+.login-screen h1{font-size:2.2rem;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.login-screen p{color:#64748b;font-size:0.95rem}
+/* Header */
+.header{text-align:center;padding:20px 16px 8px}
 .header h1{font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .header .updated{font-size:0.8rem;color:#64748b;margin-top:4px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;padding:16px;max-width:1200px;margin:0 auto}
@@ -21,7 +37,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .badge.offline{background:#7f1d1d;color:#fca5a5}
 .badge.warning{background:#713f12;color:#fde047}
 .gauges{display:flex;flex-direction:column;gap:12px}
-.gauge{}
 .gauge-label{display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;color:#94a3b8}
 .gauge-value{font-weight:600;font-variant-numeric:tabular-nums}
 .gauge-bar{height:8px;background:#334155;border-radius:4px;overflow:hidden}
@@ -35,19 +50,45 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .summary{max-width:1200px;margin:0 auto 8px;padding:0 16px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.85rem;color:#94a3b8}
 .summary-item{background:#1e293b;padding:8px 16px;border-radius:8px;border:1px solid #334155}
 .summary-value{font-weight:700;color:#e2e8f0}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
-.loading{animation:pulse 1.5s infinite}
+.hidden{display:none!important}
+.error-banner{text-align:center;padding:16px;color:#fca5a5;font-size:0.9rem}
 </style>
 </head>
 <body>
-<div class="header">
+<!-- Top bar -->
+<div id="topbar" class="topbar hidden">
+  <div class="topbar-brand">⚡ ClusterPulse</div>
+  <div class="topbar-user">
+    <img id="userAvatar" src="" alt="">
+    <span class="name" id="userName"></span>
+    <button class="btn btn-ghost" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- Login screen -->
+<div id="loginScreen" class="login-screen hidden">
   <h1>⚡ ClusterPulse</h1>
-  <div class="updated">Last update: <span id="timestamp">—</span></div>
+  <p>reumanlab cluster resource monitor</p>
+  <button class="btn btn-github" onclick="login()">
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    Sign in with GitHub
+  </button>
+  <p style="font-size:0.8rem;margin-top:12px;color:#475569">Authorized users only</p>
 </div>
-<div class="summary" id="summary"></div>
-<div class="grid" id="grid">
-  <div class="card loading" style="text-align:center;padding:40px">Connecting...</div>
+
+
+<!-- Dashboard (hidden until authed) -->
+<div id="dashboard" class="hidden">
+  <div class="header">
+    <div class="updated">Last update: <span id="timestamp">—</span></div>
+  </div>
+  <div class="summary" id="summary"></div>
+  <div class="grid" id="grid"><div class="card" style="text-align:center;padding:40px">Loading metrics...</div></div>
 </div>
+
+<!-- Error banner -->
+<div id="errorBanner" class="error-banner hidden"></div>
+
 <script>
 const NODE_NAMES = ['reumanlab','reumanlab-beta','reumanlab-terminal'];
 const METADATA = {
@@ -56,6 +97,43 @@ const METADATA = {
   'reumanlab-terminal': {cores:8,ram_gb:15,gpu:null}
 };
 
+// ---- Auth ----
+let currentUser = null;
+
+async function checkAuth() {
+  try {
+    const r = await fetch('/auth/me');
+    const data = await r.json();
+    if (data.authenticated) {
+      currentUser = data;
+      showDashboard();
+    } else {
+      showLogin();
+    }
+  } catch(e) {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('topbar').classList.add('hidden');
+}
+
+function showDashboard() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('topbar').classList.remove('hidden');
+  document.getElementById('userAvatar').src = currentUser.avatar_url;
+  document.getElementById('userName').textContent = currentUser.login;
+  poll();
+}
+
+function login() { window.location.href = '/auth/login'; }
+function logout() { window.location.href = '/auth/logout'; }
+
+// ---- Metrics ----
 function colorClass(val) {
   if (val == null) return 'low';
   if (val > 80) return 'high';
@@ -82,35 +160,23 @@ function gaugeHTML(label, value, unit, detail) {
 }
 
 function render(data) {
-  const grid = document.getElementById('grid');
   const ts = document.getElementById('timestamp');
+  const grid = document.getElementById('grid');
   const summary = document.getElementById('summary');
-
   ts.textContent = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '—';
 
   let online=0, totalCpu=0, totalRam=0;
   let html = '';
-
   for (const name of NODE_NAMES) {
     const node = data.nodes?.[name] || {error:'no_data'};
     const meta = METADATA[name];
     const isOffline = !!node.error;
-
-    if (!isOffline) {
-      online++;
-      totalCpu += meta.cores;
-      totalRam += meta.ram_gb;
-    }
-
+    if (!isOffline) { online++; totalCpu += meta.cores; totalRam += meta.ram_gb; }
     const gpuDetail = meta.gpu && !isOffline && node.gpu_name
       ? `${node.gpu_name} · ${node.gpu_memory_used_mb}/${node.gpu_memory_total_mb} MB`
       : (meta.gpu ? meta.gpu : null);
-
     html += `<div class="card${isOffline?' offline':''}">
-      <div class="node-header">
-        <div class="node-name">🖥 ${name}</div>
-        ${statusBadge(node)}
-      </div>
+      <div class="node-header"><div class="node-name">🖥 ${name}</div>${statusBadge(node)}</div>
       <div class="gauges">
         ${gaugeHTML('CPU', node.cpu_percent, '%')}
         ${gaugeHTML('RAM', node.ram_percent, '%')}
@@ -118,33 +184,33 @@ function render(data) {
         ${gaugeHTML('GPU', node.gpu_percent, '%', gpuDetail)}
       </div>
       <div class="meta">
-        <span>🔄 ${meta.cores} cores</span>
-        <span>💾 ${meta.ram_gb} GB</span>
-        ${meta.gpu ? `<span>🎮 ${meta.gpu}</span>` : '<span>🎮 N/A</span>'}
-      </div>
-    </div>`;
+        <span>🔄 ${meta.cores} cores</span><span>💾 ${meta.ram_gb} GB</span>
+        ${meta.gpu ? '<span>🎮 '+meta.gpu+'</span>' : '<span>🎮 N/A</span>'}
+      </div></div>`;
   }
-
   grid.innerHTML = html;
   summary.innerHTML = `
     <div class="summary-item">🟢 <span class="summary-value">${online}/${NODE_NAMES.length}</span> online</div>
     <div class="summary-item">🔄 <span class="summary-value">${totalCpu}</span> cores</div>
-    <div class="summary-item">💾 <span class="summary-value">${totalRam.toFixed(0)}</span> GB RAM</div>
-  `;
+    <div class="summary-item">💾 <span class="summary-value">${totalRam.toFixed(0)}</span> GB RAM</div>`;
 }
 
 async function poll() {
   try {
     const resp = await fetch('/api/status');
-    const data = await resp.json();
-    render(data);
+    if (resp.status === 401) { logout(); return; }
+    if (!resp.ok) throw new Error(resp.statusText);
+    render(await resp.json());
+    document.getElementById('errorBanner').classList.add('hidden');
   } catch(e) {
-    document.getElementById('grid').innerHTML = '<div class="card" style="text-align:center;padding:40px;color:#ef4444">⚠ Aggregator unreachable</div>';
+    document.getElementById('errorBanner').classList.remove('hidden');
+    document.getElementById('errorBanner').textContent = '⚠ Cannot reach aggregator';
   }
 }
 
-poll();
-setInterval(poll, 3000);
+// Boot
+checkAuth();
+setInterval(() => { if (currentUser) poll(); }, 3000);
 </script>
 </body>
 </html>
