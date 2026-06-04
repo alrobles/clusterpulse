@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClusterPulse — reumanlab Cluster Monitor</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.header{text-align:center;padding:24px 16px 8px}
+.header h1{font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header .updated{font-size:0.8rem;color:#64748b;margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;padding:16px;max-width:1200px;margin:0 auto}
+.card{background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155;transition:border-color .2s}
+.card:hover{border-color:#475569}
+.card.offline{opacity:.5}
+.node-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.node-name{font-size:1.2rem;font-weight:600}
+.badge{font-size:0.7rem;padding:2px 8px;border-radius:12px;font-weight:600;text-transform:uppercase}
+.badge.online{background:#065f46;color:#6ee7b7}
+.badge.offline{background:#7f1d1d;color:#fca5a5}
+.badge.warning{background:#713f12;color:#fde047}
+.gauges{display:flex;flex-direction:column;gap:12px}
+.gauge{}
+.gauge-label{display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;color:#94a3b8}
+.gauge-value{font-weight:600;font-variant-numeric:tabular-nums}
+.gauge-bar{height:8px;background:#334155;border-radius:4px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:4px;transition:width .4s ease,background .4s ease}
+.gauge-fill.low{background:#22c55e}
+.gauge-fill.mid{background:#eab308}
+.gauge-fill.high{background:#ef4444}
+.gpu-detail{font-size:0.75rem;color:#64748b;margin-top:2px}
+.meta{display:flex;gap:12px;margin-top:12px;font-size:0.75rem;color:#64748b;border-top:1px solid #334155;padding-top:12px}
+.meta span{display:flex;align-items:center;gap:4px}
+.summary{max-width:1200px;margin:0 auto 8px;padding:0 16px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.85rem;color:#94a3b8}
+.summary-item{background:#1e293b;padding:8px 16px;border-radius:8px;border:1px solid #334155}
+.summary-value{font-weight:700;color:#e2e8f0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.loading{animation:pulse 1.5s infinite}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>⚡ ClusterPulse</h1>
+  <div class="updated">Last update: <span id="timestamp">—</span></div>
+</div>
+<div class="summary" id="summary"></div>
+<div class="grid" id="grid">
+  <div class="card loading" style="text-align:center;padding:40px">Connecting...</div>
+</div>
+<script>
+const NODE_NAMES = ['reumanlab','reumanlab-beta','reumanlab-terminal'];
+const METADATA = {
+  'reumanlab': {cores:22,ram_gb:62,gpu:'RTX 2000 Ada 8GB'},
+  'reumanlab-beta': {cores:8,ram_gb:7.4,gpu:null},
+  'reumanlab-terminal': {cores:8,ram_gb:15,gpu:null}
+};
+
+function colorClass(val) {
+  if (val == null) return 'low';
+  if (val > 80) return 'high';
+  if (val > 50) return 'mid';
+  return 'low';
+}
+
+function statusBadge(node) {
+  if (node.error) return '<span class="badge offline">OFFLINE</span>';
+  const vals = [node.cpu_percent, node.ram_percent, node.disk_percent];
+  if (vals.some(v => v != null && v > 80)) return '<span class="badge warning">WARN</span>';
+  return '<span class="badge online">ONLINE</span>';
+}
+
+function gaugeHTML(label, value, unit, detail) {
+  const cls = colorClass(value);
+  const displayVal = value != null ? value.toFixed(1) : 'N/A';
+  const pct = value != null ? Math.min(100, Math.max(0, value)) : 0;
+  return `<div class="gauge">
+    <div class="gauge-label"><span>${label}</span><span class="gauge-value">${displayVal}${unit}</span></div>
+    <div class="gauge-bar"><div class="gauge-fill ${cls}" style="width:${pct}%"></div></div>
+    ${detail ? `<div class="gpu-detail">${detail}</div>` : ''}
+  </div>`;
+}
+
+function render(data) {
+  const grid = document.getElementById('grid');
+  const ts = document.getElementById('timestamp');
+  const summary = document.getElementById('summary');
+
+  ts.textContent = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '—';
+
+  let online=0, totalCpu=0, totalRam=0;
+  let html = '';
+
+  for (const name of NODE_NAMES) {
+    const node = data.nodes?.[name] || {error:'no_data'};
+    const meta = METADATA[name];
+    const isOffline = !!node.error;
+
+    if (!isOffline) {
+      online++;
+      totalCpu += meta.cores;
+      totalRam += meta.ram_gb;
+    }
+
+    const gpuDetail = meta.gpu && !isOffline && node.gpu_name
+      ? `${node.gpu_name} · ${node.gpu_memory_used_mb}/${node.gpu_memory_total_mb} MB`
+      : (meta.gpu ? meta.gpu : null);
+
+    html += `<div class="card${isOffline?' offline':''}">
+      <div class="node-header">
+        <div class="node-name">🖥 ${name}</div>
+        ${statusBadge(node)}
+      </div>
+      <div class="gauges">
+        ${gaugeHTML('CPU', node.cpu_percent, '%')}
+        ${gaugeHTML('RAM', node.ram_percent, '%')}
+        ${gaugeHTML('Disk', node.disk_percent, '%')}
+        ${gaugeHTML('GPU', node.gpu_percent, '%', gpuDetail)}
+      </div>
+      <div class="meta">
+        <span>🔄 ${meta.cores} cores</span>
+        <span>💾 ${meta.ram_gb} GB</span>
+        ${meta.gpu ? `<span>🎮 ${meta.gpu}</span>` : '<span>🎮 N/A</span>'}
+      </div>
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+  summary.innerHTML = `
+    <div class="summary-item">🟢 <span class="summary-value">${online}/${NODE_NAMES.length}</span> online</div>
+    <div class="summary-item">🔄 <span class="summary-value">${totalCpu}</span> cores</div>
+    <div class="summary-item">💾 <span class="summary-value">${totalRam.toFixed(0)}</span> GB RAM</div>
+  `;
+}
+
+async function poll() {
+  try {
+    const resp = await fetch('/api/status');
+    const data = await resp.json();
+    render(data);
+  } catch(e) {
+    document.getElementById('grid').innerHTML = '<div class="card" style="text-align:center;padding:40px;color:#ef4444">⚠ Aggregator unreachable</div>';
+  }
+}
+
+poll();
+setInterval(poll, 3000);
+</script>
+</body>
+</html>

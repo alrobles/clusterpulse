@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 import httpx
 import yaml
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 # ---------------------------------------------------------------------------
 # Config
@@ -111,3 +112,9 @@ app = FastAPI(title="ClusterPulse Aggregator", version="0.1.0", lifespan=lifespa
 async def status():
     """Return the cached cluster-wide status."""
     return _cache
+
+
+# Serve dashboard SPA (must be after route definitions)
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.isdir(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
